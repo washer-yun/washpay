@@ -91,6 +91,10 @@
   .btn-gray { background: var(--bg); color: #4e5968; }
   .btn:disabled { opacity: .35; cursor: default; }
   .mt { margin-top: 16px; }
+  .link {
+    display: block; margin: 12px auto 0; border: 0; background: none; cursor: pointer;
+    font: inherit; font-size: 13px; color: var(--sub); text-decoration: underline;
+  }
 
   /* 상품 */
   .product { display: flex; justify-content: space-between; align-items: center; }
@@ -191,6 +195,7 @@
       </div>
     </div>
     <button class="btn btn-primary mt" id="scanBtn">주변 세탁기 검색</button>
+    <button class="link" id="scanAllBtn">목록에 안 보이면 전체 기기에서 찾기</button>
   </section>
 
   <section class="card">
@@ -294,6 +299,7 @@
       scan.className = "btn btn-primary mt";
     }
     scan.disabled = state === "searching";
+    $("scanAllBtn").style.display = state === "connected" ? "none" : "block";
     $("payBtn").disabled = state !== "connected";
   }
 
@@ -323,16 +329,21 @@
   }
 
   // ===== 기능 1: 세탁기 검색 및 연결 =====
-  async function connectWasher() {
+  async function connectWasher(showAll) {
     if (!navigator.bluetooth) {
       toast("이 브라우저는 블루투스를 못 써요. Bluefy로 열어주세요");
       return;
     }
+    let stage = "pick";
     try {
       setConnState("searching");
-      device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [SERVICE_UUID] }],
-      });
+      // showAll: UUID로 거르지 않고 주변 기기를 전부 보여준다 (안 잡힐 때 점검용)
+      device = await navigator.bluetooth.requestDevice(
+        showAll
+          ? { acceptAllDevices: true, optionalServices: [SERVICE_UUID] }
+          : { filters: [{ services: [SERVICE_UUID] }] }
+      );
+      stage = "connect";
       device.addEventListener("gattserverdisconnected", onDisconnected);
 
       const server = await device.gatt.connect();
@@ -347,7 +358,8 @@
       device = null;
       commandChar = null;
       setConnState("idle");
-      if (err.name === "NotFoundError") toast("검색을 취소했어요");
+      if (stage === "pick" && err.name === "NotFoundError") toast("검색을 취소했어요");
+      else if (err.name === "NotFoundError") toast("이 기기에는 세탁기 서비스가 없어요. 다른 기기를 골라주세요");
       else toast("연결 실패: " + err.message);
     }
   }
@@ -436,8 +448,9 @@
   $("dim").addEventListener("click", closeSheet);
   $("scanBtn").addEventListener("click", () => {
     if (device && device.gatt.connected) disconnectWasher();
-    else connectWasher();
+    else connectWasher(false);
   });
+  $("scanAllBtn").addEventListener("click", () => connectWasher(true));
   $("payBtn").addEventListener("click", payAndStart);
   $("doneBtn").addEventListener("click", () => {
     $("done").classList.remove("show");
