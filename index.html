@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#f2f4f6">
+<title>세탁페이</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f4f6;
+    --card: #ffffff;
+    --text: #191f28;
+    --sub: #6b7684;
+    --faint: #b0b8c1;
+    --line: #f2f4f6;
+    --blue: #3182f6;
+    --blue-press: #1b64da;
+    --blue-soft: #e8f3ff;
+    --green: #03b26c;
+    --green-soft: #e5f8ef;
+    --red: #f04452;
+    --radius: 22px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.02em;
+    min-height: 100vh;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 32px);
+  }
+  .wrap { max-width: 460px; margin: 0 auto; }
+
+  /* 상단 */
+  .top { display: flex; align-items: center; justify-content: space-between; height: 48px; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.04em; }
+  .logo span { color: var(--blue); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--sub);
+    background: var(--card); padding: 7px 12px; border-radius: 999px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .chip.on { color: var(--green); }
+  .chip.on .dot { background: var(--green); box-shadow: 0 0 0 4px var(--green-soft); }
+  .chip.wait .dot { background: var(--blue); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  .hello { font-size: 15px; color: var(--sub); margin: 18px 4px 10px; font-weight: 500; }
+  .hello b { color: var(--text); font-weight: 700; }
+
+  /* 카드 공통 */
+  .card { background: var(--card); border-radius: var(--radius); padding: 22px 20px; margin-bottom: 12px; }
+  .label { font-size: 14px; color: var(--sub); font-weight: 600; }
+
+  /* 잔액 */
+  .balance-row { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 8px; }
+  .balance { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .btn-small {
+    border: 0; background: var(--blue-soft); color: var(--blue);
+    font: inherit; font-size: 14px; font-weight: 700;
+    padding: 9px 14px; border-radius: 12px; cursor: pointer;
+  }
+  .btn-small:active { transform: scale(.96); }
+
+  /* 세탁기 */
+  .washer { display: flex; align-items: center; gap: 14px; }
+  .washer-icon {
+    width: 52px; height: 52px; border-radius: 16px; flex: none;
+    background: var(--bg); display: grid; place-items: center; font-size: 26px;
+    transition: background .2s;
+  }
+  .washer-icon.on { background: var(--blue-soft); }
+  .washer-icon.spin span { display: inline-block; animation: spin 1.2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .washer-name { font-size: 17px; font-weight: 700; }
+  .washer-desc { font-size: 14px; color: var(--sub); margin-top: 3px; }
+
+  /* 버튼 */
+  .btn {
+    width: 100%; border: 0; border-radius: 16px; cursor: pointer;
+    font: inherit; font-size: 17px; font-weight: 700; padding: 17px;
+    transition: transform .08s, background .15s, opacity .15s;
+  }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:active:not(:disabled) { background: var(--blue-press); }
+  .btn-gray { background: var(--bg); color: #4e5968; }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .mt { margin-top: 16px; }
+
+  /* 상품 */
+  .product { display: flex; justify-content: space-between; align-items: center; }
+  .product-name { font-size: 17px; font-weight: 700; }
+  .product-desc { font-size: 14px; color: var(--sub); margin-top: 3px; }
+  .price { font-size: 19px; font-weight: 800; }
+
+  /* 이용 내역 */
+  .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .empty { color: var(--faint); font-size: 14px; padding: 14px 0 2px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .row-title { font-size: 15px; font-weight: 600; }
+  .row-time { font-size: 13px; color: var(--faint); margin-top: 2px; }
+  .row-amt { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .row-amt.plus { color: var(--blue); }
+
+  .note { font-size: 13px; color: var(--sub); text-align: center; margin: 18px 8px 0; line-height: 1.5; }
+
+  /* 바텀시트 */
+  .dim {
+    position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 10;
+  }
+  .dim.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
+    background: var(--card); border-radius: 24px 24px 0 0;
+    padding: 12px 20px calc(env(safe-area-inset-bottom) + 20px);
+    transform: translateY(105%); transition: transform .3s cubic-bezier(.2,.8,.2,1);
+    max-width: 460px; margin: 0 auto;
+  }
+  .sheet.show { transform: translateY(0); }
+  .grab { width: 40px; height: 5px; border-radius: 3px; background: #e5e8eb; margin: 0 auto 18px; }
+  .sheet h2 { font-size: 21px; margin: 0 0 16px; font-weight: 800; }
+  .amounts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .amount {
+    border: 1.5px solid #e5e8eb; background: var(--card); border-radius: 14px;
+    font: inherit; font-size: 15px; font-weight: 700; padding: 15px 0; cursor: pointer; color: var(--text);
+  }
+  .amount.sel { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+
+  /* 완료 화면 */
+  .done {
+    position: fixed; inset: 0; z-index: 20; background: var(--card);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .done.show { opacity: 1; pointer-events: auto; }
+  .check {
+    width: 76px; height: 76px; border-radius: 50%; background: var(--blue);
+    display: grid; place-items: center; transform: scale(.4);
+    transition: transform .45s cubic-bezier(.3,1.6,.5,1);
+  }
+  .done.show .check { transform: scale(1); }
+  .check svg { width: 38px; height: 38px; }
+  .check path { stroke-dasharray: 40; stroke-dashoffset: 40; transition: stroke-dashoffset .4s .25s ease-out; }
+  .done.show .check path { stroke-dashoffset: 0; }
+  .done h1 { font-size: 24px; font-weight: 800; margin: 26px 0 8px; text-align: center; }
+  .done p { color: var(--sub); font-size: 16px; margin: 0; text-align: center; line-height: 1.5; }
+  .done .btn { position: absolute; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 20px); width: auto; max-width: 428px; margin: 0 auto; }
+
+  /* 토스트 */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px); z-index: 30;
+    transform: translate(-50%, 20px); opacity: 0;
+    background: rgba(25,31,40,.92); color: #fff; font-size: 14px; font-weight: 600;
+    padding: 13px 18px; border-radius: 14px; width: max-content; max-width: calc(100% - 32px);
+    transition: opacity .2s, transform .2s; pointer-events: none; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="logo">세탁<span>페이</span></div>
+    <div class="chip" id="chip"><span class="dot"></span><span id="chipText">연결 안 됨</span></div>
+  </header>
+
+  <p class="hello"><b id="userName"></b>님, 오늘도 뽀송하게</p>
+
+  <section class="card">
+    <div class="label">내 포인트</div>
+    <div class="balance-row">
+      <div class="balance" id="balance">10,000원</div>
+      <button class="btn-small" id="chargeBtn">충전</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="washer">
+      <div class="washer-icon" id="washerIcon"><span>🧺</span></div>
+      <div>
+        <div class="washer-name" id="washerName">연결된 세탁기가 없어요</div>
+        <div class="washer-desc" id="washerDesc">근처 세탁기를 검색해서 연결해 주세요</div>
+      </div>
+    </div>
+    <button class="btn btn-primary mt" id="scanBtn">주변 세탁기 검색</button>
+  </section>
+
+  <section class="card">
+    <div class="product">
+      <div>
+        <div class="product-name">표준 세탁 1회</div>
+        <div class="product-desc">1번 세탁기 · 약 40분</div>
+      </div>
+      <div class="price">2,000원</div>
+    </div>
+    <button class="btn btn-primary mt" id="payBtn" disabled>결제 및 시작</button>
+  </section>
+
+  <section class="card">
+    <div class="history-head"><div class="label">이용 내역</div></div>
+    <div id="history"><div class="empty">아직 이용 내역이 없어요</div></div>
+  </section>
+
+  <p class="note">교육용 시뮬레이션이에요. 실제 결제는 일어나지 않아요.</p>
+</div>
+
+<!-- 충전 바텀시트 -->
+<div class="dim" id="dim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="포인트 충전">
+  <div class="grab"></div>
+  <h2>얼마를 충전할까요?</h2>
+  <div class="amounts" id="amounts">
+    <button class="amount" data-amt="5000">5,000원</button>
+    <button class="amount sel" data-amt="10000">1만원</button>
+    <button class="amount" data-amt="30000">3만원</button>
+  </div>
+  <button class="btn btn-primary" id="confirmCharge">충전하기</button>
+</div>
+
+<!-- 결제 완료 화면 -->
+<div class="done" id="done">
+  <div class="check">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <h1>결제 완료!<br>1번 세탁기가 돌아가요</h1>
+  <p id="doneDesc">2,000원 결제 · 남은 포인트 8,000원</p>
+  <button class="btn btn-primary" id="doneBtn">확인</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ===== 설정 (server.py 와 똑같이 맞출 것, 반드시 소문자) =====
+  const SERVICE_UUID = "c0ffee00-1a2b-4c3d-8e9f-a0b1c2d3e4f5";
+  const COMMAND_UUID = "c0ffee01-1a2b-4c3d-8e9f-a0b1c2d3e4f5";
+  const USER_NAME = "김세탁";
+  const PRICE = 2000;
+  const START_BALANCE = 10000;
+
+  // ===== 상태 =====
+  let balance = START_BALANCE;
+  let device = null;        // BluetoothDevice
+  let commandChar = null;   // 명령 특성
+  let paying = false;
+
+  const $ = (id) => document.getElementById(id);
+  const won = (n) => n.toLocaleString("ko-KR") + "원";
+
+  $("userName").textContent = USER_NAME;
+
+  // ===== 화면 갱신 =====
+  function renderBalance(from) {
+    const el = $("balance");
+    if (from === undefined || from === balance) { el.textContent = won(balance); return; }
+    const to = balance, start = performance.now(), dur = 500;
+    (function step(t) {
+      const p = Math.min(1, (t - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = won(Math.round(from + (to - from) * eased));
+      if (p < 1) requestAnimationFrame(step);
+    })(start);
+  }
+
+  function setConnState(state) {
+    const chip = $("chip"), icon = $("washerIcon"), scan = $("scanBtn");
+    chip.className = "chip" + (state === "connected" ? " on" : state === "searching" ? " wait" : "");
+    icon.className = "washer-icon" + (state === "connected" ? " on" : "");
+
+    if (state === "connected") {
+      $("chipText").textContent = "연결됨";
+      $("washerName").textContent = (device && device.name) || "SmartWasher";
+      $("washerDesc").textContent = "1번 세탁기 · 사용 가능";
+      scan.textContent = "연결 끊기";
+      scan.className = "btn btn-gray mt";
+    } else if (state === "searching") {
+      $("chipText").textContent = "연결 중";
+      $("washerName").textContent = "세탁기를 찾고 있어요";
+      $("washerDesc").textContent = "목록에서 세탁기를 골라주세요";
+      scan.textContent = "검색 중...";
+      scan.className = "btn btn-primary mt";
+    } else {
+      $("chipText").textContent = "연결 안 됨";
+      $("washerName").textContent = "연결된 세탁기가 없어요";
+      $("washerDesc").textContent = "근처 세탁기를 검색해서 연결해 주세요";
+      scan.textContent = "주변 세탁기 검색";
+      scan.className = "btn btn-primary mt";
+    }
+    scan.disabled = state === "searching";
+    $("payBtn").disabled = state !== "connected";
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+  }
+
+  function addHistory(title, amount) {
+    const box = $("history");
+    const empty = box.querySelector(".empty");
+    if (empty) empty.remove();
+    const time = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML =
+      '<div><div class="row-title"></div><div class="row-time"></div></div>' +
+      '<div class="row-amt ' + (amount > 0 ? "plus" : "") + '"></div>';
+    row.querySelector(".row-title").textContent = title;
+    row.querySelector(".row-time").textContent = time;
+    row.querySelector(".row-amt").textContent = (amount > 0 ? "+" : "-") + won(Math.abs(amount));
+    box.prepend(row);
+  }
+
+  // ===== 기능 1: 세탁기 검색 및 연결 =====
+  async function connectWasher() {
+    if (!navigator.bluetooth) {
+      toast("이 브라우저는 블루투스를 못 써요. Bluefy로 열어주세요");
+      return;
+    }
+    try {
+      setConnState("searching");
+      device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [SERVICE_UUID] }],
+      });
+      device.addEventListener("gattserverdisconnected", onDisconnected);
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(SERVICE_UUID);
+      commandChar = await service.getCharacteristic(COMMAND_UUID);
+
+      setConnState("connected");
+      toast("세탁기와 연결됐어요");
+    } catch (err) {
+      console.error(err);
+      if (device && device.gatt.connected) device.gatt.disconnect();
+      device = null;
+      commandChar = null;
+      setConnState("idle");
+      if (err.name === "NotFoundError") toast("검색을 취소했어요");
+      else toast("연결 실패: " + err.message);
+    }
+  }
+
+  function disconnectWasher() {
+    if (device && device.gatt.connected) device.gatt.disconnect();
+    else onDisconnected();
+  }
+
+  function onDisconnected() {
+    commandChar = null;
+    setConnState("idle");
+    toast("세탁기 연결이 끊겼어요");
+  }
+
+  // ===== 기능 2: 결제 및 시작 ('1' 전송 후 2,000원 차감) =====
+  async function payAndStart() {
+    if (paying) return;
+    if (!commandChar || !device || !device.gatt.connected) {
+      toast("먼저 세탁기를 연결해 주세요");
+      return;
+    }
+    if (balance < PRICE) {
+      toast("포인트가 부족해요. 충전해 주세요");
+      openSheet();
+      return;
+    }
+
+    paying = true;
+    const btn = $("payBtn");
+    btn.disabled = true;
+    btn.textContent = "결제 중...";
+
+    try {
+      const data = new TextEncoder().encode("1");
+      if (commandChar.writeValueWithResponse) await commandChar.writeValueWithResponse(data);
+      else await commandChar.writeValue(data);
+
+      // 세탁기가 명령을 받은 게 확인된 뒤에만 차감한다
+      const before = balance;
+      balance -= PRICE;
+      renderBalance(before);
+      addHistory("1번 세탁기 · 표준 세탁", -PRICE);
+      $("washerIcon").classList.add("spin");
+      $("washerDesc").textContent = "1번 세탁기 · 가동 중";
+      showDone();
+    } catch (err) {
+      console.error(err);
+      toast("전송 실패. 포인트는 그대로예요 (" + err.message + ")");
+    } finally {
+      paying = false;
+      btn.textContent = "결제 및 시작";
+      btn.disabled = !(device && device.gatt.connected);
+    }
+  }
+
+  function showDone() {
+    $("doneDesc").textContent = won(PRICE) + " 결제 · 남은 포인트 " + won(balance);
+    $("done").classList.add("show");
+  }
+
+  // ===== 포인트 충전 (화면 숫자만 올리는 가상 충전) =====
+  let chargeAmt = 10000;
+  function openSheet() { $("dim").classList.add("show"); $("sheet").classList.add("show"); }
+  function closeSheet() { $("dim").classList.remove("show"); $("sheet").classList.remove("show"); }
+
+  $("amounts").addEventListener("click", (e) => {
+    const b = e.target.closest(".amount");
+    if (!b) return;
+    document.querySelectorAll(".amount").forEach((x) => x.classList.remove("sel"));
+    b.classList.add("sel");
+    chargeAmt = Number(b.dataset.amt);
+  });
+
+  $("confirmCharge").addEventListener("click", () => {
+    const before = balance;
+    balance += chargeAmt;
+    renderBalance(before);
+    addHistory("포인트 충전", chargeAmt);
+    closeSheet();
+    toast(won(chargeAmt) + " 충전했어요");
+  });
+
+  // ===== 이벤트 연결 =====
+  $("chargeBtn").addEventListener("click", openSheet);
+  $("dim").addEventListener("click", closeSheet);
+  $("scanBtn").addEventListener("click", () => {
+    if (device && device.gatt.connected) disconnectWasher();
+    else connectWasher();
+  });
+  $("payBtn").addEventListener("click", payAndStart);
+  $("doneBtn").addEventListener("click", () => {
+    $("done").classList.remove("show");
+    setTimeout(() => $("washerIcon").classList.remove("spin"), 4000);
+  });
+
+  renderBalance();
+  setConnState("idle");
+</script>
+</body>
+</html>
